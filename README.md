@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Socket.tech Token Swap Widget
 
-## Getting Started
+A cross-chain token swap widget built with Next.js, React, TailwindCSS, and Socket.tech integration. This project allows users to swap tokens across different blockchains (e.g., USDC on Polygon → ETH on Arbitrum) with a seamless user experience.
 
-First, run the development server:
+## 🚀 Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), React 19, TailwindCSS 4
+- **Web3**: wagmi v2, viem, ethers, RainbowKit v2
+- **API Integration**: Socket.tech REST API
+- **Styling**: TailwindCSS
+- **Theme**: Light/Dark mode support with next-themes
+
+## ✨ Features
+
+- Connect wallet via RainbowKit
+- Select source and destination tokens and chains
+- Set slippage tolerance (0.5%, 1%, 2%, or custom)
+- View estimated output and minimum received amount
+- Perform ERC-20 approvals when needed
+- Execute cross-chain swaps
+- View transaction status and details
+- Dark/Light theme support
+- Responsive design
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=YOUR_WALLET_CONNECT_PROJECT_ID
+NEXT_PUBLIC_ALCHEMY_API_KEY=YOUR_ALCHEMY_API_KEY
+```
+
+### Installation
 
 ```bash
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔄 Implementation Details
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### API Integration
 
-## Learn More
+This project uses the Socket.tech REST API for cross-chain token swaps. The API is used to:
 
-To learn more about Next.js, take a look at the following resources:
+- Fetch token lists for each chain
+- Get quotes for token swaps
+- Build and execute transactions
+- Handle token approvals
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Design Decisions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **REST API vs SDK**: Chose to use the REST API directly for more control over the implementation and to reduce bundle size.
+- **wagmi/viem vs ethers**: Used wagmi/viem for wallet connections and transactions for better TypeScript support and future compatibility.
+- **Component Structure**: Modular components for better maintainability and reusability.
 
-## Deploy on Vercel
+## 📱 Responsive Design
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The UI is fully responsive and works well on mobile devices, tablets, and desktops.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🚀 Deployment
+
+The project can be deployed on Vercel with the following command:
+
+```bash
+vercel
+```
+
+## 📝 License
+
+This project is MIT licensed.
