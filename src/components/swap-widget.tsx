@@ -165,6 +165,27 @@ export function SwapWidget() {
           });
           console.log("Uniswap quote:", uniQuote);
           setUniswapQuote(uniQuote);
+          
+          // Create a mock Socket quote structure using Uniswap data
+          // This ensures the swap button is enabled
+          const mockQuote = {
+            route: {
+              fromAmount: parseUnits(amount, fromToken.decimals).toString(),
+              toAmount: uniQuote.amountOutWei,
+              approvalData: {
+                allowanceTarget: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // Uniswap V3 Router
+                allowanceValue: parseUnits(amount, fromToken.decimals).toString(),
+                spender: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+              },
+            },
+            fromAmount: parseUnits(amount, fromToken.decimals).toString(),
+            toAmount: uniQuote.amountOutWei,
+            minAmount: BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000),
+            fromToken,
+            toToken,
+          };
+          
+          setQuote(mockQuote);
         } catch (uniError) {
           console.error("Uniswap quote error:", uniError);
           setUniswapQuote(null);
@@ -205,7 +226,7 @@ export function SwapWidget() {
       return;
     }
 
-    if (!fromToken || !toToken || !quote || !address || !walletClient) {
+    if (!fromToken || !toToken || !uniswapQuote || !address || !walletClient || !publicClient) {
       setError("Missing required information");
       return;
     }
@@ -222,69 +243,140 @@ export function SwapWidget() {
         return;
       }
 
+      // Uniswap V3 Router address
+      const UNISWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
+      
       // Check if approval is needed for ERC20 tokens
       if (!fromToken.isNative) {
-        const hasAllowance = await checkAllowance(
-          fromChain.id,
-          address,
-          quote.route.approvalData?.allowanceTarget ||
-            quote.route.approvalData?.spender,
-          fromToken.address,
-          quote.fromAmount
-        );
-
-        if (!hasAllowance) {
-          setIsApproving(true);
-
-          // Build approval transaction
-          const approvalTx = await buildApprovalTransaction(
-            fromChain.id,
-            address,
-            quote.route.approvalData?.allowanceTarget ||
-              quote.route.approvalData?.spender,
-            fromToken.address,
-            quote.fromAmount
-          );
-
-          // Send approval transaction
-          const approvalHash = await walletClient.sendTransaction({
-            to: approvalTx.to as `0x${string}`,
-            data: approvalTx.data as `0x${string}`,
-            value: BigInt(0),
+        try {
+          // Check allowance using publicClient
+          const erc20ABI = [
+            {
+              "constant": true,
+              "inputs": [
+                { "name": "_owner", "type": "address" },
+                { "name": "_spender", "type": "address" }
+              ],
+              "name": "allowance",
+              "outputs": [{ "name": "", "type": "uint256" }],
+              "payable": false,
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "constant": false,
+              "inputs": [
+                { "name": "_spender", "type": "address" },
+                { "name": "_value", "type": "uint256" }
+              ],
+              "name": "approve",
+              "outputs": [{ "name": "", "type": "bool" }],
+              "payable": false,
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ];
+          
+          const allowance = await publicClient.readContract({
+            address: fromToken.address as `0x${string}`,
+            abi: erc20ABI,
+            functionName: 'allowance',
+            args: [address, UNISWAP_ROUTER_ADDRESS as `0x${string}`]
           });
-
-          // Wait for approval to be mined
-          setTxHash(approvalHash);
-          setTxStatus("pending");
-
-          // In a real app, you'd want to wait for the transaction to be confirmed
-          // For simplicity, we'll just wait a few seconds
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-
+          
+          const amountBigInt = BigInt(parseUnits(fromAmount, fromToken.decimals).toString());
+          
+          if (BigInt(allowance.toString()) < amountBigInt) {
+            setIsApproving(true);
+            
+            // Send approval transaction
+            const approvalHash = await walletClient.writeContract({
+              address: fromToken.address as `0x${string}`,
+              abi: erc20ABI,
+              functionName: 'approve',
+              args: [UNISWAP_ROUTER_ADDRESS as `0x${string}`, amountBigInt]
+            });
+            
+            // Wait for approval to be mined
+            setTxHash(approvalHash);
+            setTxStatus("pending");
+            
+            // Wait for the transaction to be confirmed
+            await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+            
+            setIsApproving(false);
+          }
+        } catch (approvalError) {
+          console.error("Approval error:", approvalError);
+          setError("Failed to approve token. Please try again.");
           setIsApproving(false);
+          setIsSwapping(false);
+          return;
         }
       }
-
-      // Build the swap transaction
-      const swapTx = await buildTransaction(quote.route, address);
-
+      
+      // Uniswap V3 SwapRouter ABI (simplified for exactInputSingle)
+      const swapRouterABI = [
+        {
+          "inputs": [{
+            "components": [
+              { "internalType": "address", "name": "tokenIn", "type": "address" },
+              { "internalType": "address", "name": "tokenOut", "type": "address" },
+              { "internalType": "uint24", "name": "fee", "type": "uint24" },
+              { "internalType": "address", "name": "recipient", "type": "address" },
+              { "internalType": "uint256", "name": "deadline", "type": "uint256" },
+              { "internalType": "uint256", "name": "amountIn", "type": "uint256" },
+              { "internalType": "uint256", "name": "amountOutMinimum", "type": "uint256" },
+              { "internalType": "uint160", "name": "sqrtPriceLimitX96", "type": "uint160" }
+            ],
+            "internalType": "struct ISwapRouter.ExactInputSingleParams",
+            "name": "params",
+            "type": "tuple"
+          }],
+          "name": "exactInputSingle",
+          "outputs": [{ "internalType": "uint256", "name": "amountOut", "type": "uint256" }],
+          "stateMutability": "payable",
+          "type": "function"
+        }
+      ];
+      
+      // Calculate minimum amount out based on slippage
+      const amountOutMinimum = BigInt(uniswapQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000);
+      
+      // Calculate deadline (30 minutes from now)
+      const deadline = Math.floor(Date.now() / 1000) + 30 * 60;
+      
+      // Prepare swap parameters
+      const swapParams = {
+        tokenIn: fromToken.address as `0x${string}`,
+        tokenOut: toToken.address as `0x${string}`,
+        fee: 3000, // 0.3% fee tier
+        recipient: address,
+        deadline: BigInt(deadline),
+        amountIn: BigInt(parseUnits(fromAmount, fromToken.decimals).toString()),
+        amountOutMinimum: amountOutMinimum,
+        sqrtPriceLimitX96: BigInt(0) // No price limit
+      };
+      
       // Send the swap transaction
-      const hash = await walletClient.sendTransaction({
-        to: swapTx.to as `0x${string}`,
-        data: swapTx.data as `0x${string}`,
-        value: fromToken.isNative ? BigInt(quote.fromAmount) : BigInt(0),
+      const hash = await walletClient.writeContract({
+        address: UNISWAP_ROUTER_ADDRESS as `0x${string}`,
+        abi: swapRouterABI,
+        functionName: 'exactInputSingle',
+        args: [swapParams],
+        value: fromToken.isNative ? BigInt(parseUnits(fromAmount, fromToken.decimals).toString()) : BigInt(0),
       });
-
+      
       setTxHash(hash);
       setTxStatus("pending");
-
-      // In a real app, you'd want to wait for the transaction to be confirmed
-      // For simplicity, we'll just wait a few seconds
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
+      
+      // Wait for the transaction to be confirmed
+      await publicClient.waitForTransactionReceipt({ hash });
+      
       setTxStatus("success");
       setFromAmount("");
       setQuote(null);
+      setUniswapQuote(null);
     } catch (err: any) {
       console.error("Swap error:", err);
       setTxStatus("error");
@@ -822,7 +914,7 @@ export function SwapWidget() {
                   clipRule="evenodd"
                 />
               </svg>
-              Enter Amount
+              Swap
             </span>
           ) : !hasSufficientBalance ? (
             <span className="flex items-center justify-center gap-2">

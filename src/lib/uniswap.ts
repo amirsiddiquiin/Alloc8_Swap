@@ -60,11 +60,12 @@ async function getPoolConstants(
         ? [tokenA, tokenB]
         : [tokenB, tokenA];
 
+    // Use the actual tokens passed to the function
     const poolAddress = computePoolAddress({
       factoryAddress: POOL_FACTORY_ADDRESS,
-      tokenA: WETH_TOKEN,
-      tokenB: USDC_TOKEN,
-      fee: FeeAmount.MEDIUM,
+      tokenA: token0,
+      tokenB: token1,
+      fee: fee as FeeAmount,
     });
 
     const poolContract = getContract({
