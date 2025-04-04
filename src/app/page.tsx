@@ -10,7 +10,7 @@ export default function Home() {
       {/* Header */}
       <div className="w-full max-w-6xl flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Alloc8 Token Swap
+        Alloc8 Nexus
         </h1>
         <div className="flex items-center gap-4">
           <ThemeToggle />
