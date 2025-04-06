@@ -61,6 +61,46 @@ export const COMMON_TOKENS: Record<number, Token[]> = {
       chainId: 1,
       logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
     },
+    {
+      symbol: "WBTC",
+      name: "Wrapped Bitcoin",
+      address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+      decimals: 8,
+      chainId: 1,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      decimals: 18,
+      chainId: 1,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+    },
+    {
+      symbol: "LINK",
+      name: "ChainLink Token",
+      address: "0x514910771AF9Ca656af840dff83E8264EcF986CA",
+      decimals: 18,
+      chainId: 1,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png",
+    },
+    {
+      symbol: "UNI",
+      name: "Uniswap",
+      address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+      decimals: 18,
+      chainId: 1,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png",
+    },
+    {
+      symbol: "AAVE",
+      name: "Aave Token",
+      address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
+      decimals: 18,
+      chainId: 1,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png",
+    },
   ],
   137: [
     {
@@ -79,6 +119,38 @@ export const COMMON_TOKENS: Record<number, Token[]> = {
       decimals: 6,
       chainId: 137,
       logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+    },
+    {
+      symbol: "USDT",
+      name: "Tether USD",
+      address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+      decimals: 6,
+      chainId: 137,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+    },
+    {
+      symbol: "WBTC",
+      name: "Wrapped Bitcoin",
+      address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+      decimals: 8,
+      chainId: 137,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+      decimals: 18,
+      chainId: 137,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+    },
+    {
+      symbol: "AAVE",
+      name: "Aave Token",
+      address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B",
+      decimals: 18,
+      chainId: 137,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png",
     },
   ],
   42161: [
@@ -99,6 +171,38 @@ export const COMMON_TOKENS: Record<number, Token[]> = {
       chainId: 42161,
       logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
     },
+    {
+      symbol: "USDT",
+      name: "Tether USD",
+      address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+      decimals: 6,
+      chainId: 42161,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+    },
+    {
+      symbol: "WBTC",
+      name: "Wrapped Bitcoin",
+      address: "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
+      decimals: 8,
+      chainId: 42161,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+      decimals: 18,
+      chainId: 42161,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+    },
+    {
+      symbol: "ARB",
+      name: "Arbitrum",
+      address: "0x912CE59144191C1204E64559FE8253a0e49E6548",
+      decimals: 18,
+      chainId: 42161,
+      logoURI: "https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg",
+    },
   ],
   10: [
     {
@@ -118,6 +222,38 @@ export const COMMON_TOKENS: Record<number, Token[]> = {
       chainId: 10,
       logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
     },
+    {
+      symbol: "USDT",
+      name: "Tether USD",
+      address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+      decimals: 6,
+      chainId: 10,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+      decimals: 18,
+      chainId: 10,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+    },
+    {
+      symbol: "OP",
+      name: "Optimism",
+      address: "0x4200000000000000000000000000000000000042",
+      decimals: 18,
+      chainId: 10,
+      logoURI: "https://assets.coingecko.com/coins/images/25244/small/Optimism.png",
+    },
+    {
+      symbol: "WBTC",
+      name: "Wrapped Bitcoin",
+      address: "0x68f180fcCe6836688e9084f035309E29Bf0A2095",
+      decimals: 8,
+      chainId: 10,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+    },
   ],
   8453: [
     {
@@ -136,6 +272,30 @@ export const COMMON_TOKENS: Record<number, Token[]> = {
       decimals: 6,
       chainId: 8453,
       logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+    },
+    {
+      symbol: "DAI",
+      name: "Dai Stablecoin",
+      address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+      decimals: 18,
+      chainId: 8453,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+    },
+    {
+      symbol: "USDT",
+      name: "Tether USD",
+      address: "0xA219439258ca9da29E9Cc4cE5596924745e12B93",
+      decimals: 6,
+      chainId: 8453,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png",
+    },
+    {
+      symbol: "WBTC",
+      name: "Wrapped Bitcoin",
+      address: "0x3aAB2285ddcDdaD8edf438C1bAB47e1a9D05a9b4",
+      decimals: 8,
+      chainId: 8453,
+      logoURI: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
     },
   ],
 };
@@ -173,22 +333,35 @@ export function parseUnits(amount: string, decimals: number): string {
 // Socket API functions
 export async function getTokens(chainId: number): Promise<Token[]> {
   try {
+    // Add timeout to the fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     const response = await fetch(`${SOCKET_API_URL}/token-lists/tokens?chainId=${chainId}`, {
       headers: {
         "API-KEY": SOCKET_API_KEY,
       },
-    });
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
     
     if (!response.ok) {
-      throw new Error("Failed to fetch tokens");
+      console.warn(`API returned status ${response.status} when fetching tokens for chain ${chainId}`);
+      return COMMON_TOKENS[chainId] || [];
     }
     
     const data = await response.json();
 
-    console.log("checking data", data)
+    // Validate the response structure
+    if (!data.success || !Array.isArray(data.result)) {
+      console.warn("Invalid token data format received", data);
+      return COMMON_TOKENS[chainId] || [];
+    }
+    
+    console.log(`Successfully fetched ${data.result.length} tokens for chain ${chainId}`);
     return data.result;
   } catch (error) {
     console.error("Error fetching tokens:", error);
+    // Always fall back to common tokens if there's any error
     return COMMON_TOKENS[chainId] || [];
   }
 }

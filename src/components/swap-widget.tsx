@@ -183,6 +183,8 @@ export function SwapWidget() {
             minAmount: BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000),
             fromToken,
             toToken,
+            routeType: "Uniswap V3",
+            gasUsd: "0.50", // Estimated gas fee in USD
           };
           
           setQuote(mockQuote);
@@ -404,8 +406,8 @@ export function SwapWidget() {
 
   // Format estimated output
   const formattedOutput = uniswapQuote
-    ? Number(uniswapQuote.amountOut) / 10
-    : "0";
+    ? parseFloat(uniswapQuote.amountOut)
+    : 0;
 
   // Format min amount out (after slippage)
   const formattedMinAmountOut = quote
@@ -618,7 +620,7 @@ export function SwapWidget() {
                 Swap Details
               </span>
               <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-full">
-                {quote.routeType}
+                {quote.routeType || "Uniswap V3"}
               </span>
             </div>
 
@@ -661,7 +663,7 @@ export function SwapWidget() {
                   Network fee
                 </span>
                 <span className="font-medium text-gray-800 dark:text-gray-200">
-                  ~${quote.gasUsd ? formatCurrency(quote.gasUsd) : "0.00"}
+                  ~${quote.gasUsd ? formatCurrency(quote.gasUsd) : "0.50"}
                 </span>
               </div>
             </div>
