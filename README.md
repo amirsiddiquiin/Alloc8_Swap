@@ -1,3 +1,9 @@
+
+![Xnip2025-04-06_15-26-30](https://github.com/user-attachments/assets/c4c4b3dc-ad94-4a0e-a47d-dbaa70bccab3)
+
+![image](https://github.com/user-attachments/assets/ea43d5ec-361c-455e-8ccf-86b0a052b4e4)
+
+
 # Socket.tech Token Swap Widget
 
 A cross-chain token swap widget built with Next.js, React, TailwindCSS, and Socket.tech integration. This project allows users to swap tokens across different blockchains (e.g., USDC on Polygon → ETH on Arbitrum) with a seamless user experience.
