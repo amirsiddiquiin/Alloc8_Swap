@@ -164,30 +164,46 @@ export function SwapWidget() {
             amountIn: amount,
           });
           console.log("Uniswap quote:", uniQuote);
-          setUniswapQuote(uniQuote);
           
-          // Create a mock Socket quote structure using Uniswap data
-          // This ensures the swap button is enabled
-          const mockQuote = {
-            route: {
+          // Extract only the properties we need and handle the undefined case
+          if (uniQuote) {
+            setUniswapQuote({
+              amountOut: uniQuote.amountOut,
+              amountOutWei: uniQuote.amountOutWei
+            });
+          } else {
+            setUniswapQuote(null);
+          }
+          
+          // Only proceed if we have a valid quote
+          if (uniQuote && uniQuote.amountOutWei) {
+            // Create a mock Socket quote structure using Uniswap data
+            // This ensures the swap button is enabled
+            const mockQuote = {
+              route: {
+                fromAmount: parseUnits(amount, fromToken.decimals).toString(),
+                toAmount: uniQuote.amountOutWei,
+                approvalData: {
+                  allowanceTarget: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // Uniswap V3 Router
+                  allowanceValue: parseUnits(amount, fromToken.decimals).toString(),
+                  spender: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+                },
+              },
               fromAmount: parseUnits(amount, fromToken.decimals).toString(),
               toAmount: uniQuote.amountOutWei,
-              approvalData: {
-                allowanceTarget: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // Uniswap V3 Router
-                allowanceValue: parseUnits(amount, fromToken.decimals).toString(),
-                spender: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-              },
-            },
-            fromAmount: parseUnits(amount, fromToken.decimals).toString(),
-            toAmount: uniQuote.amountOutWei,
-            minAmount: BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000),
-            fromToken,
-            toToken,
-            routeType: "Uniswap V3",
-            gasUsd: "0.50", // Estimated gas fee in USD
-          };
-          
-          setQuote(mockQuote);
+              minAmount: BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000),
+              // Add the missing properties required by SwapQuote type
+              minAmountOut: (BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000)).toString(),
+              estimatedGas: uniQuote.estimatedGas || "250000", // Use from uniQuote or provide a default
+              gasPrice: uniQuote.gasPrice || "50", // Use from uniQuote or provide a default
+              fromToken,
+              toToken,
+              routeType: "Uniswap V3",
+              gasUsd: "0.50", // Estimated gas fee in USD
+            };
+            
+            setQuote(mockQuote);
+          }
         } catch (uniError) {
           console.error("Uniswap quote error:", uniError);
           setUniswapQuote(null);
@@ -279,16 +295,18 @@ export function SwapWidget() {
             }
           ];
           
+          // Specify that we expect a bigint return type from the contract call
           const allowance = await publicClient.readContract({
             address: fromToken.address as `0x${string}`,
             abi: erc20ABI,
             functionName: 'allowance',
             args: [address, UNISWAP_ROUTER_ADDRESS as `0x${string}`]
-          });
+          }) as bigint;
           
           const amountBigInt = BigInt(parseUnits(fromAmount, fromToken.decimals).toString());
           
-          if (BigInt(allowance.toString()) < amountBigInt) {
+          // Now TypeScript knows allowance is a bigint, so we can compare directly
+          if (allowance < amountBigInt) {
             setIsApproving(true);
             
             // Send approval transaction
