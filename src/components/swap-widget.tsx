@@ -53,6 +53,7 @@ export function SwapWidget() {
   const [isGettingQuote, setIsGettingQuote] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [needsApproval, setNeedsApproval] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [txStatus, setTxStatus] = useState<
     "pending" | "success" | "error" | null
@@ -249,64 +250,61 @@ export function SwapWidget() {
       return;
     }
 
-    setIsSwapping(true);
     setError(null);
     setTxHash("");
     setTxStatus(null);
-
-    try {
-      // Check if we need to switch networks
-      if (chainId !== fromChain.id) {
-        setError("Please switch to the correct network manually");
-        return;
-      }
-
-      // Uniswap V3 Router address
-      const UNISWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
-      
-      // Check if approval is needed for ERC20 tokens
-      if (!fromToken.isNative) {
-        try {
-          // Check allowance using publicClient
-          const erc20ABI = [
-            {
-              "constant": true,
-              "inputs": [
-                { "name": "_owner", "type": "address" },
-                { "name": "_spender", "type": "address" }
-              ],
-              "name": "allowance",
-              "outputs": [{ "name": "", "type": "uint256" }],
-              "payable": false,
-              "stateMutability": "view",
-              "type": "function"
-            },
-            {
-              "constant": false,
-              "inputs": [
-                { "name": "_spender", "type": "address" },
-                { "name": "_value", "type": "uint256" }
-              ],
-              "name": "approve",
-              "outputs": [{ "name": "", "type": "bool" }],
-              "payable": false,
-              "stateMutability": "nonpayable",
-              "type": "function"
-            }
-          ];
+    
+    // Uniswap V3 Router address
+    const UNISWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
+    
+    // Check if approval is needed for ERC20 tokens first
+    if (fromToken.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+      try {
+        // Check allowance using publicClient
+        const erc20ABI = [
+          {
+            "constant": true,
+            "inputs": [
+              { "name": "_owner", "type": "address" },
+              { "name": "_spender", "type": "address" }
+            ],
+            "name": "allowance",
+            "outputs": [{ "name": "", "type": "uint256" }],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+          },
+          {
+            "constant": false,
+            "inputs": [
+              { "name": "_spender", "type": "address" },
+              { "name": "_value", "type": "uint256" }
+            ],
+            "name": "approve",
+            "outputs": [{ "name": "", "type": "bool" }],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+          }
+        ];
+        
+        // Specify that we expect a bigint return type from the contract call
+        const allowance = await publicClient.readContract({
+          address: fromToken.address as `0x${string}`,
+          abi: erc20ABI,
+          functionName: 'allowance',
+          args: [address, UNISWAP_ROUTER_ADDRESS as `0x${string}`]
+        }) as bigint;
+        
+        const amountBigInt = BigInt(parseUnits(fromAmount, fromToken.decimals).toString());
+        
+        // Now TypeScript knows allowance is a bigint, so we can compare directly
+        if (allowance < amountBigInt) {
+          // Set needsApproval to true to update the button text
+          setNeedsApproval(true);
           
-          // Specify that we expect a bigint return type from the contract call
-          const allowance = await publicClient.readContract({
-            address: fromToken.address as `0x${string}`,
-            abi: erc20ABI,
-            functionName: 'allowance',
-            args: [address, UNISWAP_ROUTER_ADDRESS as `0x${string}`]
-          }) as bigint;
-          
-          const amountBigInt = BigInt(parseUnits(fromAmount, fromToken.decimals).toString());
-          
-          // Now TypeScript knows allowance is a bigint, so we can compare directly
-          if (allowance < amountBigInt) {
+          // If the user clicked the button when it says "Approve", handle the approval
+          if (needsApproval) {
             setIsApproving(true);
             
             // Send approval transaction
@@ -324,17 +322,35 @@ export function SwapWidget() {
             // Wait for the transaction to be confirmed
             await publicClient.waitForTransactionReceipt({ hash: approvalHash });
             
+            // Reset approval state
+            setNeedsApproval(false);
             setIsApproving(false);
+            setTxHash("");
+            setTxStatus(null);
+          } else {
+            // If the button was clicked but it's not in approval mode yet, just return
+            // The UI will update to show the Approve button
+            return;
           }
-        } catch (approvalError) {
-          console.error("Approval error:", approvalError);
-          setError("Failed to approve token. Please try again.");
-          setIsApproving(false);
-          setIsSwapping(false);
-          return;
         }
+      } catch (err: any) {
+        console.error("Approval error:", err);
+        setError(err.message || "Failed to approve token");
+        setIsApproving(false);
+        return;
       }
-      
+    }
+    
+    // Now proceed with the swap
+    setIsSwapping(true);
+
+    try {
+      // Check if we need to switch networks
+      if (chainId !== fromChain.id) {
+        setError("Please switch to the correct network manually");
+        return;
+      }
+
       // Uniswap V3 SwapRouter ABI (simplified for exactInputSingle)
       const swapRouterABI = [
         {
@@ -384,7 +400,7 @@ export function SwapWidget() {
         abi: swapRouterABI,
         functionName: 'exactInputSingle',
         args: [swapParams],
-        value: fromToken.isNative ? BigInt(parseUnits(fromAmount, fromToken.decimals).toString()) : BigInt(0),
+        value: fromToken.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? BigInt(parseUnits(fromAmount, fromToken.decimals).toString()) : BigInt(0),
       });
       
       setTxHash(hash);
@@ -951,6 +967,22 @@ export function SwapWidget() {
                 />
               </svg>
               Insufficient Balance
+            </span>
+          ) : needsApproval ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Approve
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
