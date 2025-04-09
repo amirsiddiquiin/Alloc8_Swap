@@ -14,17 +14,23 @@ import {
   formatUnits,
   CHAINS,
   COMMON_TOKENS,
-  getQuote,
-  buildTransaction,
-  checkAllowance,
-  buildApprovalTransaction,
 } from "@/lib/socket";
-import { ChainInfo, SwapQuote, Token, TokenBalance } from "@/types";
+import { ChainInfo, SwapQuote, Token } from "@/types";
 import { TokenSelector } from "./token-selector";
 import { formatCurrency, debounce } from "@/lib/utils";
 import { ArrowDownIcon, LoadingIcon, SwapIcon } from "./icons";
 import { Input } from "./ui/input";
-import { getUniswapQuote, createToken } from "@/lib/uniswap";
+import { 
+  checkTokenAllowance, 
+  approveTokens, 
+  executeSwap, 
+  getSwapQuote 
+} from "@/lib/swap-utils";
+import { 
+  NATIVE_ETH_ADDRESS, 
+  DEFAULT_SLIPPAGE, 
+  SLIPPAGE_OPTIONS 
+} from "@/lib/constants";
 
 export function SwapWidget() {
   // Wallet and chain state
@@ -47,7 +53,7 @@ export function SwapWidget() {
     amountOut: string;
     amountOutWei: string;
   } | null>(null);
-  const [slippage, setSlippage] = useState(0.5); // Default 0.5%
+  const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
 
   // Transaction state
   const [isGettingQuote, setIsGettingQuote] = useState(false);
@@ -64,12 +70,13 @@ export function SwapWidget() {
   const { data: fromTokenBalance } = useBalance({
     address,
     token:
-      fromToken?.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-        ? undefined
-        : (fromToken?.address as `0x${string}`),
+      fromToken?.address === NATIVE_ETH_ADDRESS || 
+      fromToken?.address?.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        ? undefined // For native ETH, don't pass a token address
+        : (fromToken?.address as `0x${string}`), // For ERC20 tokens, pass the address
     chainId: fromChain?.id,
     query: {
-      enabled: isConnected && !!fromToken && !!fromChain,
+      enabled: isConnected && !!fromToken && !!fromChain && !!address,
       refetchInterval: 10000, // Refetch every 10 seconds
       refetchOnWindowFocus: true,
       staleTime: 5000, // Consider data stale after 5 seconds
@@ -82,7 +89,7 @@ export function SwapWidget() {
       address,
       tokenAddress: fromToken?.address,
       isNative:
-        fromToken?.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        fromToken?.address === NATIVE_ETH_ADDRESS,
       chainId: fromChain?.id,
       isConnected,
       fromTokenBalance,
@@ -130,88 +137,24 @@ export function SwapWidget() {
       setError(null);
 
       try {
-        // // Get Socket.tech quote
-        // const socketQuote = await getQuote(
-        //   fromChain.id,
-        //   fromToken.address,
-        //   toChain.id,
-        //   toToken.address,
-        //   parseUnits(amount, fromToken.decimals),
-        //   address,
-        //   slippage
-        // );
-        // setQuote(socketQuote);
-
         // Get Uniswap quote if on same chain (Ethereum mainnet)
         console.log("Getting quote");
 
-        try {
-          console.log("Getting Uniswap quote");
-          const uniQuote = await getUniswapQuote({
-            tokenIn: createToken(
-              1,
-              fromToken.address,
-              fromToken.decimals,
-              fromToken.symbol,
-              fromToken.name
-            ),
-            tokenOut: createToken(
-              1,
-              toToken.address,
-              toToken.decimals,
-              toToken.symbol,
-              toToken.name
-            ),
-            amountIn: amount,
-          });
-          console.log("Uniswap quote:", uniQuote);
-          
-          // Extract only the properties we need and handle the undefined case
-          if (uniQuote) {
-            setUniswapQuote({
-              amountOut: uniQuote.amountOut,
-              amountOutWei: uniQuote.amountOutWei
-            });
-          } else {
-            setUniswapQuote(null);
-          }
-          
-          // Only proceed if we have a valid quote
-          if (uniQuote && uniQuote.amountOutWei) {
-            // Create a mock Socket quote structure using Uniswap data
-            // This ensures the swap button is enabled
-            const mockQuote = {
-              route: {
-                fromAmount: parseUnits(amount, fromToken.decimals).toString(),
-                toAmount: uniQuote.amountOutWei,
-                approvalData: {
-                  allowanceTarget: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", // Uniswap V3 Router
-                  allowanceValue: parseUnits(amount, fromToken.decimals).toString(),
-                  spender: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
-                },
-              },
-              fromAmount: parseUnits(amount, fromToken.decimals).toString(),
-              toAmount: uniQuote.amountOutWei,
-              minAmount: BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000),
-              // Add the missing properties required by SwapQuote type
-              minAmountOut: (BigInt(uniQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000)).toString(),
-              estimatedGas: uniQuote.estimatedGas || "250000", // Use from uniQuote or provide a default
-              gasPrice: uniQuote.gasPrice || "50", // Use from uniQuote or provide a default
-              fromToken,
-              toToken,
-              routeType: "Uniswap V3",
-              gasUsd: "0.50", // Estimated gas fee in USD
-            };
-            
-            setQuote(mockQuote);
-          }
-        } catch (uniError) {
-          console.error("Uniswap quote error:", uniError);
+        const quoteResult = await getSwapQuote(
+          fromToken,
+          toToken,
+          amount,
+          address,
+          slippage
+        );
+
+        if (quoteResult) {
+          setUniswapQuote(quoteResult.uniswapQuote);
+          setQuote(quoteResult.quote);
+        } else {
           setUniswapQuote(null);
+          setQuote(null);
         }
-        // } else {
-        //   setUniswapQuote(null);
-        // }
       } catch (error) {
         console.error("Quote error:", error);
         setError("Failed to get quote. Please try again.");
@@ -254,52 +197,19 @@ export function SwapWidget() {
     setTxHash("");
     setTxStatus(null);
     
-    // Uniswap V3 Router address
-    const UNISWAP_ROUTER_ADDRESS = "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45";
-    
     // Check if approval is needed for ERC20 tokens first
-    if (fromToken.address !== "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE") {
+    if (fromToken.address !== NATIVE_ETH_ADDRESS) {
       try {
-        // Check allowance using publicClient
-        const erc20ABI = [
-          {
-            "constant": true,
-            "inputs": [
-              { "name": "_owner", "type": "address" },
-              { "name": "_spender", "type": "address" }
-            ],
-            "name": "allowance",
-            "outputs": [{ "name": "", "type": "uint256" }],
-            "payable": false,
-            "stateMutability": "view",
-            "type": "function"
-          },
-          {
-            "constant": false,
-            "inputs": [
-              { "name": "_spender", "type": "address" },
-              { "name": "_value", "type": "uint256" }
-            ],
-            "name": "approve",
-            "outputs": [{ "name": "", "type": "bool" }],
-            "payable": false,
-            "stateMutability": "nonpayable",
-            "type": "function"
-          }
-        ];
+        // Check if token needs approval
+        const needsAllowance = await checkTokenAllowance(
+          publicClient,
+          fromToken.address,
+          address,
+          fromAmount,
+          fromToken.decimals
+        );
         
-        // Specify that we expect a bigint return type from the contract call
-        const allowance = await publicClient.readContract({
-          address: fromToken.address as `0x${string}`,
-          abi: erc20ABI,
-          functionName: 'allowance',
-          args: [address, UNISWAP_ROUTER_ADDRESS as `0x${string}`]
-        }) as bigint;
-        
-        const amountBigInt = BigInt(parseUnits(fromAmount, fromToken.decimals).toString());
-        
-        // Now TypeScript knows allowance is a bigint, so we can compare directly
-        if (allowance < amountBigInt) {
+        if (needsAllowance) {
           // Set needsApproval to true to update the button text
           setNeedsApproval(true);
           
@@ -308,19 +218,20 @@ export function SwapWidget() {
             setIsApproving(true);
             
             // Send approval transaction
-            const approvalHash = await walletClient.writeContract({
-              address: fromToken.address as `0x${string}`,
-              abi: erc20ABI,
-              functionName: 'approve',
-              args: [UNISWAP_ROUTER_ADDRESS as `0x${string}`, amountBigInt]
-            });
+            const approvalHash = await approveTokens(
+              walletClient,
+              publicClient,
+              fromToken.address,
+              fromAmount,
+              fromToken.decimals
+            );
             
             // Wait for approval to be mined
             setTxHash(approvalHash);
             setTxStatus("pending");
             
             // Wait for the transaction to be confirmed
-            await publicClient.waitForTransactionReceipt({ hash: approvalHash });
+            await publicClient.waitForTransactionReceipt({ hash: approvalHash as `0x${string}` });
             
             // Reset approval state
             setNeedsApproval(false);
@@ -351,63 +262,24 @@ export function SwapWidget() {
         return;
       }
 
-      // Uniswap V3 SwapRouter ABI (simplified for exactInputSingle)
-      const swapRouterABI = [
-        {
-          "inputs": [{
-            "components": [
-              { "internalType": "address", "name": "tokenIn", "type": "address" },
-              { "internalType": "address", "name": "tokenOut", "type": "address" },
-              { "internalType": "uint24", "name": "fee", "type": "uint24" },
-              { "internalType": "address", "name": "recipient", "type": "address" },
-              { "internalType": "uint256", "name": "deadline", "type": "uint256" },
-              { "internalType": "uint256", "name": "amountIn", "type": "uint256" },
-              { "internalType": "uint256", "name": "amountOutMinimum", "type": "uint256" },
-              { "internalType": "uint160", "name": "sqrtPriceLimitX96", "type": "uint160" }
-            ],
-            "internalType": "struct ISwapRouter.ExactInputSingleParams",
-            "name": "params",
-            "type": "tuple"
-          }],
-          "name": "exactInputSingle",
-          "outputs": [{ "internalType": "uint256", "name": "amountOut", "type": "uint256" }],
-          "stateMutability": "payable",
-          "type": "function"
-        }
-      ];
-      
       // Calculate minimum amount out based on slippage
       const amountOutMinimum = BigInt(uniswapQuote.amountOutWei) * BigInt(1000 - slippage * 10) / BigInt(1000);
       
-      // Calculate deadline (30 minutes from now)
-      const deadline = Math.floor(Date.now() / 1000) + 30 * 60;
-      
-      // Prepare swap parameters
-      const swapParams = {
-        tokenIn: fromToken.address as `0x${string}`,
-        tokenOut: toToken.address as `0x${string}`,
-        fee: 3000, // 0.3% fee tier
-        recipient: address,
-        deadline: BigInt(deadline),
-        amountIn: BigInt(parseUnits(fromAmount, fromToken.decimals).toString()),
-        amountOutMinimum: amountOutMinimum,
-        sqrtPriceLimitX96: BigInt(0) // No price limit
-      };
-      
-      // Send the swap transaction
-      const hash = await walletClient.writeContract({
-        address: UNISWAP_ROUTER_ADDRESS as `0x${string}`,
-        abi: swapRouterABI,
-        functionName: 'exactInputSingle',
-        args: [swapParams],
-        value: fromToken.address === "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" ? BigInt(parseUnits(fromAmount, fromToken.decimals).toString()) : BigInt(0),
-      });
+      // Execute the swap
+      const hash = await executeSwap(
+        walletClient,
+        fromToken,
+        toToken,
+        fromAmount,
+        amountOutMinimum,
+        address
+      );
       
       setTxHash(hash);
       setTxStatus("pending");
       
       // Wait for the transaction to be confirmed
-      await publicClient.waitForTransactionReceipt({ hash });
+      await publicClient.waitForTransactionReceipt({ hash: hash as `0x${string}` });
       
       setTxStatus("success");
       setFromAmount("");
@@ -517,10 +389,22 @@ export function SwapWidget() {
               rightElement={
                 fromTokenBalance && (
                   <button
-                    onClick={() =>
-                      fromTokenBalance &&
-                      setFromAmount(fromTokenBalance.formatted)
-                    }
+                    onClick={() => {
+                      if (fromTokenBalance) {
+                        // For ETH, leave a small amount for gas
+                        if (fromToken?.address === NATIVE_ETH_ADDRESS || 
+                            fromToken?.address?.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+                          const balanceValue = parseFloat(fromTokenBalance.formatted);
+                          // Leave 0.01 ETH for gas if balance is more than 0.02 ETH
+                          const maxAmount = balanceValue > 0.02 ? (balanceValue - 0.01).toString() : balanceValue.toString();
+                          setFromAmount(maxAmount);
+                        } else {
+                          // For tokens, use the full balance
+                          setFromAmount(fromTokenBalance.formatted);
+                        }
+                        console.log("Setting max amount:", fromTokenBalance.formatted, "for token", fromToken?.symbol);
+                      }
+                    }}
                     className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                   >
                     MAX
@@ -613,7 +497,7 @@ export function SwapWidget() {
           </div>
 
           <div className="flex gap-2">
-            {[0.5, 1, 2].map((value) => (
+            {SLIPPAGE_OPTIONS.map((value) => (
               <button
                 key={value}
                 onClick={() => setSlippage(value)}
