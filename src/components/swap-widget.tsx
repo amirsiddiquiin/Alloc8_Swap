@@ -33,14 +33,12 @@ import {
 } from "@/lib/constants";
 
 export function SwapWidget() {
-  // Wallet and chain state
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const config = useConfig();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
 
-  // Token and chain selection state
   const [fromChain, setFromChain] = useState<ChainInfo>(CHAINS[1]); // Default to Ethereum
   const [toChain, setToChain] = useState<ChainInfo>(CHAINS[137]); // Default to Polygon
   const [fromToken, setFromToken] = useState<Token | null>(null);
